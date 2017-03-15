@@ -2,6 +2,7 @@
 import freenect
 import cv2
 import numpy as np
+import meshbuilder_pb2
 
 #function to get RGB image from kinect
 def get_video():
