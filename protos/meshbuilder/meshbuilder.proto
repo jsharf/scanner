@@ -7,25 +7,26 @@ service MeshBuilder {
 }
 
 message CreateProjectRequest {
-  string name = 1;
+    string name = 1;
 }
-message CreateProjectResponse {
-    int32 id = 1;
-}
+message CreateProjectResponse { }
 
 message AddRequest {
-    int32 id = 1;
+    string name = 1;
     Depth depth = 2;
 }
-message AddResponse {
-
-}
+message AddResponse { }
 
 message RetrieveRequest {
-    int32 id = 1;
+    string name = 1;
 }
 message RetrieveResponse {
-
+    repeated Point points = 1;
+}
+message Point {
+    float X = 1;
+    float Y = 2;
+    float Z = 3;
 }
 
 message Depth {
