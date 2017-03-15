@@ -5,7 +5,6 @@ import (
 	"log"
 	"net"
 
-	"github.com/go-gl/mathgl/mgl32"
 	pb "github.com/omustardo/scanner/protos/meshbuilder"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -15,7 +14,7 @@ import (
 const port = ":50051"
 
 type project struct {
-	points []mgl32.Vec3
+	points []*pb.Point
 }
 
 type Server struct {
@@ -37,24 +36,26 @@ func (s *Server) Add(ctx context.Context, req *pb.AddRequest) (*pb.AddResponse, 
 	if _, ok := s.projects[req.Name]; !ok {
 		return nil, fmt.Errorf("unknown project: %q", req.Name)
 	}
+	log.Println("Add request for", len(req.Depth.Rows), "rows")
 	project := s.projects[req.Name]
 	project.points = append(project.points, processDepth(req.GetDepth())...)
+	s.projects[req.Name] = project
 
-	log.Println("Added stuff")
+	log.Println("Added stuff. Project", req.Name, "has", len(project.points), " points.")
 	return &pb.AddResponse{}, nil
 }
 
-func processDepth(depth *pb.Depth) []mgl32.Vec3 {
+func processDepth(depth *pb.Depth) []*pb.Point {
 	if validateDepth(depth) != nil {
 		return nil
 	}
-	points := []mgl32.Vec3{}
+	points := []*pb.Point{}
 	for row := range depth.Rows {
 		if depth.Rows[row] == nil {
 			continue
 		}
 		for col, value := range depth.Rows[row].Values {
-			points = append(points, mgl32.Vec3{float32(row), float32(col), float32(value)})
+			points = append(points, &pb.Point{X: float32(row), Y: float32(col), Z: float32(value)})
 		}
 	}
 	return points
@@ -77,15 +78,12 @@ func (s *Server) Retrieve(ctx context.Context, req *pb.RetrieveRequest) (*pb.Ret
 	if _, ok := s.projects[req.Name]; !ok {
 		return nil, fmt.Errorf("unknown project: %q", req.Name)
 	}
-	return &pb.RetrieveResponse{Points: toPoints(s.projects[req.Name].points)}, nil
-}
-
-func toPoints(arr []mgl32.Vec3) []*pb.Point {
-	points := make([]*pb.Point, len(arr))
-	for i := range arr {
-		points[i] = &pb.Point{arr[i].X(), arr[i].Y(), arr[i].Z()}
+	log.Println("Retrieving from project", req.Name)
+	log.Println(len(s.projects[req.Name].points), "values")
+	if len(s.projects[req.Name].points) > 3 {
+		log.Println(s.projects[req.Name].points[:3])
 	}
-	return points
+	return &pb.RetrieveResponse{Points: s.projects[req.Name].points}, nil
 }
 
 func main() {
@@ -95,6 +93,7 @@ func main() {
 	}
 	meshBuilder := &Server{}
 	meshBuilder.projects = make(map[string]project)
+	meshBuilder.projects["test"] = project{points: []*pb.Point{{X: 10, Y: 10, Z: 10}}}
 	s := grpc.NewServer()
 	pb.RegisterMeshBuilderServer(s, meshBuilder)
 	// Register reflection service on gRPC server.
