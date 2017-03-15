@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+service MeshBuilder {
+    rpc CreateProject(CreateProjectRequest) returns (CreateProjectResponse) {}
+    rpc Add(AddRequest) returns (AddResponse) {}
+    rpc Retrieve(RetrieveRequest) returns (RetrieveResponse) {}
+}
+
+message CreateProjectRequest {
+  string name = 1;
+}
+message CreateProjectResponse {
+    int32 id = 1;
+}
+
+message AddRequest {
+    int32 id = 1;
+    Depth depth = 2;
+}
+message AddResponse {
+
+}
+
+message RetrieveRequest {
+    int32 id = 1;
+}
+message RetrieveResponse {
+
+}
+
+message Depth {
+    repeated Row rows = 1;
+
+    // FOV in degrees
+    float x_fov = 2;
+    float y_fov = 3;
+}
+message Row {
+    repeated int32 values = 1;
+}
