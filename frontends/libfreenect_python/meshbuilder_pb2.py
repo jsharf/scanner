@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='meshbuilder.proto',
   package='',
   syntax='proto3',
-  serialized_pb=_b('\n\x11meshbuilder.proto\"$\n\x14\x43reateProjectRequest\x12\x0c\n\x04name\x18\x01 \x01(\t\"#\n\x15\x43reateProjectResponse\x12\n\n\x02id\x18\x01 \x01(\x05\"/\n\nAddRequest\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x15\n\x05\x64\x65pth\x18\x02 \x01(\x0b\x32\x06.Depth\"\r\n\x0b\x41\x64\x64Response\"\x1d\n\x0fRetrieveRequest\x12\n\n\x02id\x18\x01 \x01(\x05\"\x12\n\x10RetrieveResponse\"9\n\x05\x44\x65pth\x12\x12\n\x04rows\x18\x01 \x03(\x0b\x32\x04.Row\x12\r\n\x05x_fov\x18\x02 \x01(\x02\x12\r\n\x05y_fov\x18\x03 \x01(\x02\"\x15\n\x03Row\x12\x0e\n\x06values\x18\x01 \x03(\x05\x32\xa6\x01\n\x0bMeshBuilder\x12@\n\rCreateProject\x12\x15.CreateProjectRequest\x1a\x16.CreateProjectResponse\"\x00\x12\"\n\x03\x41\x64\x64\x12\x0b.AddRequest\x1a\x0c.AddResponse\"\x00\x12\x31\n\x08Retrieve\x12\x10.RetrieveRequest\x1a\x11.RetrieveResponse\"\x00\x62\x06proto3')
+  serialized_pb=_b('\n\x11meshbuilder.proto\"$\n\x14\x43reateProjectRequest\x12\x0c\n\x04name\x18\x01 \x01(\t\"\x17\n\x15\x43reateProjectResponse\"1\n\nAddRequest\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x15\n\x05\x64\x65pth\x18\x02 \x01(\x0b\x32\x06.Depth\"\r\n\x0b\x41\x64\x64Response\"\x1f\n\x0fRetrieveRequest\x12\x0c\n\x04name\x18\x01 \x01(\t\"*\n\x10RetrieveResponse\x12\x16\n\x06points\x18\x01 \x03(\x0b\x32\x06.Point\"(\n\x05Point\x12\t\n\x01X\x18\x01 \x01(\x02\x12\t\n\x01Y\x18\x02 \x01(\x02\x12\t\n\x01Z\x18\x03 \x01(\x02\"9\n\x05\x44\x65pth\x12\x12\n\x04rows\x18\x01 \x03(\x0b\x32\x04.Row\x12\r\n\x05x_fov\x18\x02 \x01(\x02\x12\r\n\x05y_fov\x18\x03 \x01(\x02\"\x15\n\x03Row\x12\x0e\n\x06values\x18\x01 \x03(\x05\x32\xa6\x01\n\x0bMeshBuilder\x12@\n\rCreateProject\x12\x15.CreateProjectRequest\x1a\x16.CreateProjectResponse\"\x00\x12\"\n\x03\x41\x64\x64\x12\x0b.AddRequest\x1a\x0c.AddResponse\"\x00\x12\x31\n\x08Retrieve\x12\x10.RetrieveRequest\x1a\x11.RetrieveResponse\"\x00\x62\x06proto3')
 )
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
@@ -64,13 +64,6 @@ _CREATEPROJECTRESPONSE = _descriptor.Descriptor(
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
-    _descriptor.FieldDescriptor(
-      name='id', full_name='CreateProjectResponse.id', index=0,
-      number=1, type=5, cpp_type=1, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
   ],
   extensions=[
   ],
@@ -84,7 +77,7 @@ _CREATEPROJECTRESPONSE = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=59,
-  serialized_end=94,
+  serialized_end=82,
 )
 
 
@@ -96,9 +89,9 @@ _ADDREQUEST = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='id', full_name='AddRequest.id', index=0,
-      number=1, type=5, cpp_type=1, label=1,
-      has_default_value=False, default_value=0,
+      name='name', full_name='AddRequest.name', index=0,
+      number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
@@ -121,8 +114,8 @@ _ADDREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=96,
-  serialized_end=143,
+  serialized_start=84,
+  serialized_end=133,
 )
 
 
@@ -145,8 +138,8 @@ _ADDRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=145,
-  serialized_end=158,
+  serialized_start=135,
+  serialized_end=148,
 )
 
 
@@ -158,9 +151,9 @@ _RETRIEVEREQUEST = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='id', full_name='RetrieveRequest.id', index=0,
-      number=1, type=5, cpp_type=1, label=1,
-      has_default_value=False, default_value=0,
+      name='name', full_name='RetrieveRequest.name', index=0,
+      number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
@@ -176,8 +169,8 @@ _RETRIEVEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=160,
-  serialized_end=189,
+  serialized_start=150,
+  serialized_end=181,
 )
 
 
@@ -188,6 +181,13 @@ _RETRIEVERESPONSE = _descriptor.Descriptor(
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
+    _descriptor.FieldDescriptor(
+      name='points', full_name='RetrieveResponse.points', index=0,
+      number=1, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -200,8 +200,53 @@ _RETRIEVERESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=191,
-  serialized_end=209,
+  serialized_start=183,
+  serialized_end=225,
+)
+
+
+_POINT = _descriptor.Descriptor(
+  name='Point',
+  full_name='Point',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='X', full_name='Point.X', index=0,
+      number=1, type=2, cpp_type=6, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='Y', full_name='Point.Y', index=1,
+      number=2, type=2, cpp_type=6, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='Z', full_name='Point.Z', index=2,
+      number=3, type=2, cpp_type=6, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=227,
+  serialized_end=267,
 )
 
 
@@ -245,8 +290,8 @@ _DEPTH = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=211,
-  serialized_end=268,
+  serialized_start=269,
+  serialized_end=326,
 )
 
 
@@ -276,11 +321,12 @@ _ROW = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=270,
-  serialized_end=291,
+  serialized_start=328,
+  serialized_end=349,
 )
 
 _ADDREQUEST.fields_by_name['depth'].message_type = _DEPTH
+_RETRIEVERESPONSE.fields_by_name['points'].message_type = _POINT
 _DEPTH.fields_by_name['rows'].message_type = _ROW
 DESCRIPTOR.message_types_by_name['CreateProjectRequest'] = _CREATEPROJECTREQUEST
 DESCRIPTOR.message_types_by_name['CreateProjectResponse'] = _CREATEPROJECTRESPONSE
@@ -288,6 +334,7 @@ DESCRIPTOR.message_types_by_name['AddRequest'] = _ADDREQUEST
 DESCRIPTOR.message_types_by_name['AddResponse'] = _ADDRESPONSE
 DESCRIPTOR.message_types_by_name['RetrieveRequest'] = _RETRIEVEREQUEST
 DESCRIPTOR.message_types_by_name['RetrieveResponse'] = _RETRIEVERESPONSE
+DESCRIPTOR.message_types_by_name['Point'] = _POINT
 DESCRIPTOR.message_types_by_name['Depth'] = _DEPTH
 DESCRIPTOR.message_types_by_name['Row'] = _ROW
 
@@ -332,6 +379,13 @@ RetrieveResponse = _reflection.GeneratedProtocolMessageType('RetrieveResponse', 
   # @@protoc_insertion_point(class_scope:RetrieveResponse)
   ))
 _sym_db.RegisterMessage(RetrieveResponse)
+
+Point = _reflection.GeneratedProtocolMessageType('Point', (_message.Message,), dict(
+  DESCRIPTOR = _POINT,
+  __module__ = 'meshbuilder_pb2'
+  # @@protoc_insertion_point(class_scope:Point)
+  ))
+_sym_db.RegisterMessage(Point)
 
 Depth = _reflection.GeneratedProtocolMessageType('Depth', (_message.Message,), dict(
   DESCRIPTOR = _DEPTH,
