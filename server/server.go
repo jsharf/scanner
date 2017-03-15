@@ -1,11 +1,9 @@
 package main
 
 import (
-	"errors"
+	"fmt"
 	"log"
 	"net"
-
-	"fmt"
 
 	"github.com/go-gl/mathgl/mgl32"
 	pb "github.com/omustardo/scanner/protos/meshbuilder"
@@ -31,6 +29,7 @@ func (s *Server) CreateProject(ctx context.Context, req *pb.CreateProjectRequest
 		return nil, fmt.Errorf("project already exists with name %q", req.Name)
 	}
 	s.projects[req.Name] = project{}
+	log.Println("Created project:", req.Name)
 	return &pb.CreateProjectResponse{}, nil
 }
 
@@ -41,6 +40,7 @@ func (s *Server) Add(ctx context.Context, req *pb.AddRequest) (*pb.AddResponse, 
 	project := s.projects[req.Name]
 	project.points = append(project.points, processDepth(req.GetDepth())...)
 
+	log.Println("Added stuff")
 	return &pb.AddResponse{}, nil
 }
 
@@ -74,7 +74,18 @@ func validateDepth(d *pb.Depth) error {
 }
 
 func (s *Server) Retrieve(ctx context.Context, req *pb.RetrieveRequest) (*pb.RetrieveResponse, error) {
-	return &pb.RetrieveResponse{}, errors.New("Retrieve is unimplemented")
+	if _, ok := s.projects[req.Name]; !ok {
+		return nil, fmt.Errorf("unknown project: %q", req.Name)
+	}
+	return &pb.RetrieveResponse{Points: toPoints(s.projects[req.Name].points)}, nil
+}
+
+func toPoints(arr []mgl32.Vec3) []*pb.Point {
+	points := make([]*pb.Point, len(arr))
+	for i := range arr {
+		points[i] = &pb.Point{arr[i].X(), arr[i].Y(), arr[i].Z()}
+	}
+	return points
 }
 
 func main() {
@@ -82,8 +93,10 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
+	meshBuilder := &Server{}
+	meshBuilder.projects = make(map[string]project)
 	s := grpc.NewServer()
-	pb.RegisterMeshBuilderServer(s, &Server{})
+	pb.RegisterMeshBuilderServer(s, meshBuilder)
 	// Register reflection service on gRPC server.
 	reflection.Register(s)
 	if err := s.Serve(lis); err != nil {
