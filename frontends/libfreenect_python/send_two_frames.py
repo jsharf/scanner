@@ -21,7 +21,7 @@ def get_depth():
 
 def main():
   if (len(sys.argv) != 3):
-    print("Usage: python client.py address:port project_name")
+    print("Usage: python send_two_frames.py address:port project_name")
     sys.exit(1)
 
   server = sys.argv[1]
@@ -94,10 +94,6 @@ def main():
         del frames[i]
 
   print("Frames sent!")
-
-  # quit program when 'esc' key is pressed
-  while (cv2.waitKey(0) != 27):
-    continue
 
   cv2.destroyAllWindows()
 
