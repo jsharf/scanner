@@ -10,6 +10,8 @@ import (
 
 	"google.golang.org/grpc"
 
+	"fmt"
+
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/goxjs/gl"
 	"github.com/goxjs/glfw"
@@ -24,6 +26,7 @@ import (
 	"github.com/omustardo/gome/util/glutil"
 	"github.com/omustardo/gome/view"
 	"github.com/omustardo/scanner/protos/meshbuilder"
+	"golang.org/x/net/context"
 )
 
 const (
@@ -48,7 +51,6 @@ func main() {
 	flag.Parse()
 
 	client, conn, err := NewClient()
-	_ = client
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -59,19 +61,19 @@ func main() {
 
 	shader.Model.SetAmbientLight(&color.NRGBA{60, 60, 60, 0}) // 3D objects don't look 3D in the default max lighting, so tone it down.
 
-	//req := &meshbuilder.RetrieveRequest{Name: meshProject}
-	//resp, err := client.Retrieve(context.Background(), req)
-	//if resp == nil {
-	//	log.Fatal("no response from client.Retrieve")
-	//}
-	//points := toVec3(resp.Points)
-
-	points := []mgl32.Vec3{
-		{10, 10, 10},
-		{15, 15, 15},
-		{10, 15, 10},
-		{-10, -15, -10},
+	req := &meshbuilder.RetrieveRequest{Name: meshProject}
+	resp, err := client.Retrieve(context.Background(), req)
+	if err != nil {
+		log.Fatal("Retrieve error:", err)
 	}
+	if resp == nil {
+		log.Fatal("no response from client.Retrieve")
+	}
+	if len(resp.Points) == 0 {
+		log.Fatal("no data from client.Retrieve")
+	}
+	points := toVec3(resp.Points)
+	fmt.Println(len(points))
 	vertexVBO := glutil.LoadBufferVec3(points)
 
 	// Player is an empty model. It has no mesh so it can't be rendered, but it can still exist in the world.
