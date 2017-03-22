@@ -4,7 +4,6 @@ package points
 
 import (
 	"image/color"
-	"log"
 	"math"
 
 	"github.com/gonum/matrix/mat64"
