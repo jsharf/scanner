@@ -241,8 +241,8 @@ func columnCovariance(a, b int, m mat64.Matrix) float64 {
 
 	sum := float64(0)
 
-	aAvg := average(mat64.Col(nil, a, m))
-	bAvg := average(mat64.Col(nil, b, m))
+	aAvg := average(mat64.Row(nil, a, m))
+	bAvg := average(mat64.Row(nil, b, m))
 
 	for i := 0; i < r; i++ {
 		sum += (m.At(i, a) - aAvg) * (m.At(i, b) - bAvg)
@@ -251,11 +251,11 @@ func columnCovariance(a, b int, m mat64.Matrix) float64 {
 	return sum / float64(r)
 }
 
-func covariance(m *mat64.Dense) mat64.Matrix {
-	r, _ := m.Dims()
-	covMatrix := mat64.NewDense(r, r, nil)
-	for i := 0; i < r; i++ {
-		for j := i; j < r; j++ {
+func covariance(m mat64.Matrix) mat64.Matrix {
+	_, c := m.Dims()
+	covMatrix := mat64.NewDense(c, c, nil)
+	for i := 0; i < c; i++ {
+		for j := i; j < c; j++ {
 			cov := columnCovariance(i, j, m)
 			covMatrix.Set(i, j, cov)
 			covMatrix.Set(j, i, cov)
@@ -272,7 +272,7 @@ func (n *neighborhood) Normal() mat64.Vector {
 		return *n.normal
 	}
 
-	covMatrix := covariance(n.Dense)
+	covMatrix := covariance(n.Dense.T())
 	e := mat64.Eigen{}
 	e.Factorize(covMatrix, true)
 	eigenValues := e.Values(nil)
