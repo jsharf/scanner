@@ -4,6 +4,7 @@ package points
 
 import "github.com/gonum/matrix/mat64"
 import "math"
+import "image/color"
 
 type plane struct {
 	Center     mat64.Vector
@@ -50,6 +51,31 @@ func (a *PointCloudAnalyzer) Descriptor(col int) LFSHDescriptor {
 		LocalDepthHistogram:     n.LocalDepthHistogram(),
 		NormalDevianceHistogram: n.NormalDevianceHistogram(),
 		RadialDensityHistogram:  n.RadialDensityHistogram(),
+	}
+}
+
+// Visualizes an LFSH descriptor's three maps using color. The
+// LocalDepthHistogram's weighted average is used to computed red component, the
+// NormalDevianceHistogram is green, and the RadialDensityHistogram is for blue.
+// This is meant for visualization and debugging.
+func VisualizeDescriptor(d *LFSHDescriptor) color.RGBA {
+	var red_avg float32 = 0.0
+	for key, value := range d.LocalDepthHistogram {
+		red_avg += float32(key) / float32(numberDepthBuckets) * float32(value)
+	}
+	var green_avg float32 = 0.0
+	for key, value := range d.NormalDevianceHistogram {
+		green_avg += float32(key) / float32(numberAngularBuckets) * float32(value)
+	}
+	var blue_avg float32 = 0.0
+	for key, value := range d.RadialDensityHistogram {
+		blue_avg += float32(key) / float32(numberAnnuli) * float32(value)
+	}
+	return color.RGBA{
+		R: uint8(red_avg * 255),
+		G: uint8(green_avg * 255),
+		B: uint8(blue_avg * 255),
+		A: 255,
 	}
 }
 
