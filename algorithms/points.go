@@ -98,7 +98,7 @@ const (
 
 	// This value is used to set the size of the neighborhood sphere. In whatever
 	// units the coordinate system is in.
-	searchRadius = 1
+	searchRadius = 10
 )
 
 // n = normal
@@ -241,8 +241,8 @@ func columnCovariance(a, b int, m mat64.Matrix) float64 {
 
 	sum := float64(0)
 
-	aAvg := average(mat64.Row(nil, a, m))
-	bAvg := average(mat64.Row(nil, b, m))
+	aAvg := average(mat64.Col(nil, a, m))
+	bAvg := average(mat64.Col(nil, b, m))
 
 	for i := 0; i < r; i++ {
 		sum += (m.At(i, a) - aAvg) * (m.At(i, b) - bAvg)
