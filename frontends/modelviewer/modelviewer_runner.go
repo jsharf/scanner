@@ -3,6 +3,8 @@ package main
 import (
 	"flag"
 	"image/color"
+	"runtime/pprof"
+
 	"log"
 	"os"
 	"time"
@@ -16,7 +18,8 @@ import (
 	"github.com/goxjs/glfw"
 	"github.com/omustardo/gome"
 	"github.com/omustardo/gome/asset"
-	"github.com/omustardo/gome/camera"
+	//"github.com/omustardo/gome/camera"
+	"github.com/jsharf/scanner/algorithms"
 	"github.com/omustardo/gome/core/entity"
 	"github.com/omustardo/gome/input/keyboard"
 	"github.com/omustardo/gome/input/mouse"
@@ -27,7 +30,6 @@ import (
 	"github.com/omustardo/gome/util/fps"
 	"github.com/omustardo/gome/util/glutil"
 	"github.com/omustardo/gome/view"
-	"github.com/omustardo/scanner/algorithms"
 	"github.com/omustardo/scanner/protos/meshbuilder"
 )
 
@@ -40,8 +42,9 @@ var (
 	windowWidth  = flag.Int("window_width", 1000, "initial window width")
 	windowHeight = flag.Int("window_height", 1000, "initial window height")
 
-	frameRate = flag.Duration("framerate", time.Second/60, `Cap on framerate. Provide with units, like "16.66ms"`)
-	baseDir   = flag.String("base_dir", `C:\workspace\Go\src\github.com\omustardo\scanner\frontends\modelviewer`, "All file paths should be specified relative to this root.")
+	frameRate  = flag.Duration("framerate", time.Second/60, `Cap on framerate. Provide with units, like "16.66ms"`)
+	baseDir    = flag.String("base_dir", `C:\workspace\Go\src\github.com\omustardo\scanner\frontends\modelviewer`, "All file paths should be specified relative to this root.")
+	cpuprofile = flag.String("cpuprofile", "cpu.prof", "write cpu profile `file`")
 )
 
 func init() {
@@ -52,6 +55,17 @@ func init() {
 
 func main() {
 	flag.Parse()
+
+	if *cpuprofile != "" {
+		f, err := os.Create(*cpuprofile)
+		if err != nil {
+			log.Fatal("could not create CPU profile: ", err)
+		}
+		if err := pprof.StartCPUProfile(f); err != nil {
+			log.Fatal("could not start CPU profile: ", err)
+		}
+		defer pprof.StopCPUProfile()
+	}
 
 	terminate := gome.Initialize("Animation Demo", *windowWidth, *windowHeight, *baseDir)
 	defer terminate()
@@ -87,6 +101,9 @@ func main() {
 	texData := make([][]uint8, 0, util.RoundUpToPowerOfTwo(len(pointCloud)))
 	texCoords := make([]mgl32.Vec2, 0, util.RoundUpToPowerOfTwo(len(pointCloud)))
 	for i := range pointCloud {
+		if i == 1 {
+			return
+		}
 		desc := p.Descriptor(i)
 		c := desc.VisualizeDescriptor()
 		texData = append(texData, []uint8{c.R, c.G, c.B, c.A})
@@ -113,7 +130,7 @@ func main() {
 	// Player is an empty model. It has no mesh so it can't be rendered, but it can still exist in the world.
 	//player := &model.Model{}
 	//player.Position[0] = 0
-	cam := camera.NewFreeCamera()
+	//cam := camera.TargetCamera()
 
 	ticker := time.NewTicker(*frameRate)
 	for !view.Window.ShouldClose() {
@@ -125,12 +142,12 @@ func main() {
 		//ApplyInputs(player)
 
 		// Set up Model-View-Projection Matrix and send it to the shader program.
-		mvMatrix := cam.ModelView()
-		w, h := view.Window.GetSize()
-		pMatrix := cam.ProjectionPerspective(float32(w), float32(h)) // ProjectionOrthographic(float32(w), float32(h))
+		mvMatrix := mgl32.Mat4{}
+		//w, h := view.Window.GetSize()
+		pMatrix := mgl32.Mat4{}
 		shader.Model.SetMVPMatrix(pMatrix, mvMatrix)
 
-		cam.Update(fps.Handler.DeltaTime())
+		//cam.Update(fps.Handler.DeltaTime())
 		// Clear screen, then Draw everything
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 		model.RenderXYZAxes()

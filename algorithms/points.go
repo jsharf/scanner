@@ -125,7 +125,6 @@ func magnitudeSquared(v *mat64.Vector) float64 {
 }
 
 func getNeighborhood(col int, points *mat64.Dense, radius float64) neighborhood {
-	log.Println(col)
 	_, c := points.Dims()
 	point := points.ColView(col)
 	neighborhood := &neighborhood{
@@ -145,6 +144,8 @@ func getNeighborhood(col int, points *mat64.Dense, radius float64) neighborhood 
 			*neighborhood.ColView(c - 1) = *column
 		}
 	}
+	_, total_cols := neighborhood.Dims()
+	log.Println(total_cols)
 	return *neighborhood
 }
 
