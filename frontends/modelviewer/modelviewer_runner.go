@@ -20,6 +20,7 @@ import (
 	"github.com/omustardo/gome/asset"
 	//"github.com/omustardo/gome/camera"
 	"github.com/jsharf/scanner/algorithms"
+	"github.com/jsharf/scanner/protos/meshbuilder"
 	"github.com/omustardo/gome/core/entity"
 	"github.com/omustardo/gome/input/keyboard"
 	"github.com/omustardo/gome/input/mouse"
@@ -30,7 +31,6 @@ import (
 	"github.com/omustardo/gome/util/fps"
 	"github.com/omustardo/gome/util/glutil"
 	"github.com/omustardo/gome/view"
-	"github.com/omustardo/scanner/protos/meshbuilder"
 )
 
 const (
@@ -101,9 +101,7 @@ func main() {
 	texData := make([][]uint8, 0, util.RoundUpToPowerOfTwo(len(pointCloud)))
 	texCoords := make([]mgl32.Vec2, 0, util.RoundUpToPowerOfTwo(len(pointCloud)))
 	for i := range pointCloud {
-		if i == 1 {
-			return
-		}
+		log.Println(i, len(pointCloud))
 		desc := p.Descriptor(i)
 		c := desc.VisualizeDescriptor()
 		texData = append(texData, []uint8{c.R, c.G, c.B, c.A})
@@ -228,9 +226,15 @@ func processDepth(depth *meshbuilder.Depth) []*meshbuilder.Point {
 }
 
 func cloudToDense(vecs []mgl32.Vec3) *mat64.Dense {
-	data := make([]float64, 0, len(vecs))
+	data := make([]float64, 0, 3*len(vecs))
 	for _, v := range vecs {
-		data = append(data, float64(v.X()), float64(v.Y()), float64(v.Z()))
+		data = append(data, float64(v.X()))
+	}
+	for _, v := range vecs {
+		data = append(data, float64(v.Y()))
+	}
+	for _, v := range vecs {
+		data = append(data, float64(v.Z()))
 	}
 	return mat64.NewDense(3, 640*480, data)
 }
