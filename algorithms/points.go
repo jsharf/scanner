@@ -98,7 +98,7 @@ const (
 
 	// This value is used to set the size of the neighborhood sphere. In whatever
 	// units the coordinate system is in.
-	searchRadius = 10
+	searchRadius = 1
 )
 
 // n = normal
@@ -132,16 +132,21 @@ func getNeighborhood(col int, points *mat64.Dense, radius float64) neighborhood 
 		R:        radius,
 		universe: points,
 	}
+	diff := mat64.NewVector(3, []float64{0, 0, 0})
+	neighborhoodSet := make(map[int]bool)
 	for j := 0; j < c; j++ {
 		column := points.ColView(j)
-		diff := mat64.NewVector(3, []float64{0, 0, 0})
 		diff.SubVec(column, point)
 		distanceSquared := magnitudeSquared(diff)
 		if distanceSquared <= radius*radius {
-			neighborhood.Dense = neighborhood.Grow(0, 1).(*mat64.Dense)
-			_, c := neighborhood.Dims()
-			*neighborhood.ColView(c - 1) = *column
+			neighborhoodSet[j] = true
 		}
+	}
+	neighborhood.Dense = neighborhood.Grow(0, len(neighborhoodSet)).(*mat64.Dense)
+	index := 0
+	for k := range neighborhoodSet {
+		*neighborhood.ColView(index) = *points.ColView(k)
+		index++
 	}
 	return *neighborhood
 }
