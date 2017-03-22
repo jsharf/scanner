@@ -99,7 +99,7 @@ const (
 
 	// This value is used to set the size of the neighborhood sphere. In whatever
 	// units the coordinate system is in.
-	searchRadius = 5
+	searchRadius = 1
 )
 
 // n = normal
@@ -144,8 +144,6 @@ func getNeighborhood(col int, points *mat64.Dense, radius float64) neighborhood 
 			*neighborhood.ColView(c - 1) = *column
 		}
 	}
-	_, total_cols := neighborhood.Dims()
-	log.Println(total_cols)
 	return *neighborhood
 }
 
