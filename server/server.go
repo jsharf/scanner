@@ -2,9 +2,13 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net"
+	"os"
+	"time"
 
+	"github.com/golang/protobuf/proto"
 	pb "github.com/omustardo/scanner/protos/meshbuilder"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -38,11 +42,25 @@ func (s *Server) Add(ctx context.Context, req *pb.AddRequest) (*pb.AddResponse, 
 	}
 	log.Println("Add request for", len(req.Depth.Rows), "rows")
 	project := s.projects[req.Name]
-	project.points = append(project.points, processDepth(req.GetDepth())...)
+	newPoints := processDepth(req.GetDepth())
+	project.points = append(project.points, newPoints...)
 	s.projects[req.Name] = project
-
-	log.Println("Added stuff. Project", req.Name, "has", len(project.points), " points.")
+	//log.Println("Added stuff. Project", req.Name, "has", len(project.points), " points.")
 	return &pb.AddResponse{}, nil
+}
+
+func toFile(req *pb.AddRequest) {
+	path := fmt.Sprintf(`C:\workspace\Go\src\github.com\omustardo\scanner\%d`, time.Now().Unix())
+
+	data, err := proto.Marshal(req.Depth)
+	if err != nil {
+		panic(err)
+	}
+	err = ioutil.WriteFile(path, data, os.ModeAppend)
+	if err != nil {
+		panic(err)
+	}
+	log.Println("wrote points to path:", path)
 }
 
 func processDepth(depth *pb.Depth) []*pb.Point {
