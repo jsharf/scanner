@@ -11,18 +11,23 @@ import (
 
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/golang/protobuf/proto"
+	"github.com/gonum/matrix/mat64"
 	"github.com/goxjs/gl"
 	"github.com/goxjs/glfw"
 	"github.com/omustardo/gome"
 	"github.com/omustardo/gome/asset"
 	"github.com/omustardo/gome/camera"
+	"github.com/omustardo/gome/core/entity"
 	"github.com/omustardo/gome/input/keyboard"
 	"github.com/omustardo/gome/input/mouse"
 	"github.com/omustardo/gome/model"
+	"github.com/omustardo/gome/model/mesh"
 	"github.com/omustardo/gome/shader"
+	"github.com/omustardo/gome/util"
 	"github.com/omustardo/gome/util/fps"
 	"github.com/omustardo/gome/util/glutil"
 	"github.com/omustardo/gome/view"
+	"github.com/omustardo/scanner/algorithms"
 	"github.com/omustardo/scanner/protos/meshbuilder"
 )
 
@@ -48,18 +53,18 @@ func init() {
 func main() {
 	flag.Parse()
 
+	terminate := gome.Initialize("Animation Demo", *windowWidth, *windowHeight, *baseDir)
+	defer terminate()
+
+	// shader.Model.SetAmbientLight(&color.NRGBA{60, 60, 60, 0}) // 3D objects don't look 3D in the default max lighting, so tone it down.
+	shader.Model.SetAmbientLight(&color.NRGBA{255, 255, 255, 0})
+
+	// =========== Read points from Server ===========
 	//client, conn, err := NewClient()
 	//if err != nil {
 	//	log.Fatal(err)
 	//}
 	//defer conn.Close()
-
-	terminate := gome.Initialize("Animation Demo", *windowWidth, *windowHeight, *baseDir)
-	defer terminate()
-
-	shader.Model.SetAmbientLight(&color.NRGBA{60, 60, 60, 0}) // 3D objects don't look 3D in the default max lighting, so tone it down.
-	// shader.Model.SetAmbientLight(&color.NRGBA{255, 255, 255, 0}) // 3D objects don't look 3D in the default max lighting, so tone it down.
-
 	//req := &meshbuilder.RetrieveRequest{Name: meshProject}
 	//resp, err := client.Retrieve(context.Background(), req)
 	//if err != nil {
@@ -73,12 +78,41 @@ func main() {
 	//}
 	//points := toVec3(resp.Points)
 	//fmt.Println(len(points))
-	points := toVec3(fromFile(`1489724366`)) // 1489724360 1489724366
-	vertexVBO := glutil.LoadBufferVec3(points)
+
+	// =========== Read points from File ===========
+	pointCloud := toVec3(fromFile(`1489724366`)) // 1489724360 1489724366
+	log.Printf("got %d points, storing in texture of size %d\n", len(pointCloud), util.RoundUpToPowerOfTwo(len(pointCloud)))
+	p := &points.PointCloudAnalyzer{}
+	p.MakePointCloudAnalyzer(cloudToDense(pointCloud))
+	texData := make([][]uint8, 0, util.RoundUpToPowerOfTwo(len(pointCloud)))
+	texCoords := make([]mgl32.Vec2, 0, util.RoundUpToPowerOfTwo(len(pointCloud)))
+	for i := range pointCloud {
+		desc := p.Descriptor(i)
+		c := desc.VisualizeDescriptor()
+		texData = append(texData, []uint8{c.R, c.G, c.B, c.A})
+		texCoords = append(texCoords, mgl32.Vec2{float32(i), 0})
+	}
+	tex, err := asset.LoadTextureData2D(texData)
+	if err != nil {
+		log.Fatal(err)
+	}
+	vertexVBO := glutil.LoadBufferVec3(pointCloud)
+	m := model.Model{
+		Mesh: mesh.NewMesh(
+			vertexVBO,
+			gl.Buffer{}, gl.Buffer{},
+			gl.POINTS,
+			len(pointCloud),
+			&color.NRGBA{255, 255, 255, 255},
+			tex,
+			glutil.LoadBufferVec2(texCoords),
+		),
+		Entity: entity.Default(),
+	}
 
 	// Player is an empty model. It has no mesh so it can't be rendered, but it can still exist in the world.
-	player := &model.Model{}
-	player.Position[0] = 0
+	//player := &model.Model{}
+	//player.Position[0] = 0
 	cam := camera.NewFreeCamera()
 
 	ticker := time.NewTicker(*frameRate)
@@ -88,7 +122,7 @@ func main() {
 		keyboard.Handler.Update()
 		mouse.Handler.Update()
 
-		ApplyInputs(player)
+		//ApplyInputs(player)
 
 		// Set up Model-View-Projection Matrix and send it to the shader program.
 		mvMatrix := cam.ModelView()
@@ -101,14 +135,7 @@ func main() {
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 		model.RenderXYZAxes()
 
-		shader.Model.SetTranslationMatrix(0, 0, 0)
-		shader.Model.SetRotationMatrixQ(mgl32.QuatIdent())
-		shader.Model.SetScaleMatrix(1, 1, 1)
-		shader.Model.SetColor(&color.NRGBA{255, 255, 255, 255})
-		gl.BindBuffer(gl.ARRAY_BUFFER, vertexVBO)
-		gl.EnableVertexAttribArray(shader.Model.VertexPositionAttrib) // TODO: Can these VertexAttribArrays be enabled a single time in shader initialization and then just always used?
-		gl.VertexAttribPointer(shader.Model.VertexPositionAttrib, 3, gl.FLOAT, false, 0, 0)
-		gl.DrawArrays(gl.TRIANGLE_STRIP, 0, len(points))
+		m.Render()
 
 		// Swaps the buffer that was drawn on to be visible. The visible buffer becomes the one that gets drawn on until it's swapped again.
 		view.Window.SwapBuffers()
@@ -116,24 +143,25 @@ func main() {
 	}
 }
 
-func ApplyInputs(target *model.Model) {
-	var move mgl32.Vec2
-	if keyboard.Handler.IsKeyDown(glfw.KeyA, glfw.KeyLeft) {
-		move[0] += -1
-	}
-	if keyboard.Handler.IsKeyDown(glfw.KeyD, glfw.KeyRight) {
-		move[0] += 1
-	}
-	if keyboard.Handler.IsKeyDown(glfw.KeyW, glfw.KeyUp) {
-		move[1] += 1
-	}
-	if keyboard.Handler.IsKeyDown(glfw.KeyS, glfw.KeyDown) {
-		move[1] += -1
-	}
-	moveSpeed := float32(500)
-	move = move.Normalize().Mul(moveSpeed * fps.Handler.DeltaTimeSeconds())
-	target.ModifyPosition(move[0], move[1], 0)
-}
+//
+//func ApplyInputs(target *model.Model) {
+//	var move mgl32.Vec2
+//	if keyboard.Handler.IsKeyDown(glfw.KeyA, glfw.KeyLeft) {
+//		move[0] += -1
+//	}
+//	if keyboard.Handler.IsKeyDown(glfw.KeyD, glfw.KeyRight) {
+//		move[0] += 1
+//	}
+//	if keyboard.Handler.IsKeyDown(glfw.KeyW, glfw.KeyUp) {
+//		move[1] += 1
+//	}
+//	if keyboard.Handler.IsKeyDown(glfw.KeyS, glfw.KeyDown) {
+//		move[1] += -1
+//	}
+//	moveSpeed := float32(500)
+//	move = move.Normalize().Mul(moveSpeed * fps.Handler.DeltaTimeSeconds())
+//	target.ModifyPosition(move[0], move[1], 0)
+//}
 
 func NewClient() (meshbuilder.MeshBuilderClient, *grpc.ClientConn, error) {
 	// Set up a connection to the server.
@@ -167,17 +195,25 @@ func fromFile(path string) []*meshbuilder.Point {
 }
 
 func processDepth(depth *meshbuilder.Depth) []*meshbuilder.Point {
-	points := []*meshbuilder.Point{}
+	p := []*meshbuilder.Point{}
 	for row := range depth.Rows {
 		if depth.Rows[row] == nil {
 			continue
 		}
 		for col, value := range depth.Rows[row].Values {
-			points = append(points, &meshbuilder.Point{X: float32(row), Y: float32(col), Z: float32(value)})
+			p = append(p, &meshbuilder.Point{X: float32(row), Y: float32(col), Z: float32(value)})
 		}
 	}
-	if len(points) == 0 {
+	if len(p) == 0 {
 		panic("foo")
 	}
-	return points
+	return p
+}
+
+func cloudToDense(vecs []mgl32.Vec3) *mat64.Dense {
+	data := make([]float64, 0, len(vecs))
+	for _, v := range vecs {
+		data = append(data, float64(v.X()), float64(v.Y()), float64(v.Z()))
+	}
+	return mat64.NewDense(3, 640*480, data)
 }

@@ -2,9 +2,13 @@
 // https://www.researchgate.net/publication/293330421_A_fast_and_robust_local_descriptor_for_3D_point_cloud_registration
 package points
 
-import "github.com/gonum/matrix/mat64"
-import "math"
-import "image/color"
+import (
+	"image/color"
+	"log"
+	"math"
+
+	"github.com/gonum/matrix/mat64"
+)
 
 type plane struct {
 	Center     mat64.Vector
@@ -13,7 +17,7 @@ type plane struct {
 
 type neighborhood struct {
 	// Embedded
-	mat64.Dense
+	*mat64.Dense
 	// Public
 	Center mat64.Vector
 	R      float64
@@ -58,7 +62,7 @@ func (a *PointCloudAnalyzer) Descriptor(col int) LFSHDescriptor {
 // LocalDepthHistogram's weighted average is used to computed red component, the
 // NormalDevianceHistogram is green, and the RadialDensityHistogram is for blue.
 // This is meant for visualization and debugging.
-func VisualizeDescriptor(d *LFSHDescriptor) color.RGBA {
+func (d *LFSHDescriptor) VisualizeDescriptor() color.RGBA {
 	var red_avg float32 = 0.0
 	for key, value := range d.LocalDepthHistogram {
 		red_avg += float32(key) / float32(numberDepthBuckets) * float32(value)
@@ -95,7 +99,7 @@ const (
 
 	// This value is used to set the size of the neighborhood sphere. In whatever
 	// units the coordinate system is in.
-	searchRadius = 25
+	searchRadius = 5
 )
 
 // n = normal
@@ -120,28 +124,32 @@ func magnitudeSquared(v *mat64.Vector) float64 {
 	return sum
 }
 
-func getNeighborhood(col int, points *mat64.Dense, r float64) neighborhood {
+func getNeighborhood(col int, points *mat64.Dense, radius float64) neighborhood {
+	log.Println(col)
 	_, c := points.Dims()
 	point := points.ColView(col)
 	neighborhood := &neighborhood{
+		Dense:    mat64.NewDense(3, 0, nil),
 		Center:   *point,
-		R:        r,
+		R:        radius,
 		universe: points,
 	}
 	for j := 0; j < c; j++ {
 		column := points.ColView(j)
-		diff := &mat64.Vector{}
+		diff := mat64.NewVector(3, []float64{0, 0, 0})
 		diff.SubVec(column, point)
 		distanceSquared := magnitudeSquared(diff)
-		if distanceSquared <= r*r {
-			neighborhood.Augment(neighborhood, column)
+		if distanceSquared <= radius*radius {
+			neighborhood.Dense = neighborhood.Grow(0, 1).(*mat64.Dense)
+			_, c := neighborhood.Dims()
+			*neighborhood.ColView(c - 1) = *column
 		}
 	}
 	return *neighborhood
 }
 
 func unit(v mat64.Vector) mat64.Vector {
-	unitVector := mat64.Vector{}
+	unitVector := *mat64.NewVector(3, []float64{0, 0, 0})
 	unitVector.ScaleVec(1/mat64.Norm(&v, frobeniusNorm), &v)
 	return unitVector
 }
@@ -161,7 +169,7 @@ func (n *neighborhood) Plane() plane {
 	}
 
 	unitNormal := unit(n.Normal())
-	center := mat64.Vector{}
+	center := *mat64.NewVector(3, []float64{0, 0, 0})
 	center.AddScaledVec(&n.Center, n.R, &unitNormal)
 	n.plane = &plane{
 		UnitNormal: unitNormal,
@@ -204,9 +212,9 @@ func (n *neighborhood) RadialDensityHistogram() map[int]int {
 	for j := 0; j < c; j++ {
 		point := n.ColView(j)
 		dist := projectionPlane.distanceToPoint(*point)
-		projectedPoint := mat64.Vector{}
+		projectedPoint := *mat64.NewVector(3, []float64{0, 0, 0})
 		projectedPoint.AddScaledVec(point, dist, &projectionPlane.UnitNormal)
-		displacement := mat64.Vector{}
+		displacement := *mat64.NewVector(3, []float64{0, 0, 0})
 		displacement.SubVec(&projectionPlane.Center, &projectedPoint)
 		projectedDistance := mat64.Norm(&displacement, frobeniusNorm)
 		annulus := int(math.Floor(projectedDistance / (n.R / numberAnnuli)))
@@ -245,12 +253,12 @@ func columnCovariance(a, b int, m mat64.Matrix) float64 {
 	return sum / float64(r)
 }
 
-func covariance(m mat64.Dense) mat64.Matrix {
-	r, c := m.Dims()
-	covMatrix := mat64.NewDense(r, c, nil)
+func covariance(m *mat64.Dense) mat64.Matrix {
+	r, _ := m.Dims()
+	covMatrix := mat64.NewDense(r, r, nil)
 	for i := 0; i < r; i++ {
-		for j := i; j < c; j++ {
-			cov := columnCovariance(i, j, &m)
+		for j := i; j < r; j++ {
+			cov := columnCovariance(i, j, m)
 			covMatrix.Set(i, j, cov)
 			covMatrix.Set(j, i, cov)
 		}
