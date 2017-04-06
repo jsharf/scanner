@@ -3,10 +3,10 @@
 package points
 
 import (
-	"image/color"
-	"math"
-
 	"github.com/gonum/matrix/mat64"
+	"image/color"
+	"log"
+	"math"
 )
 
 type plane struct {
@@ -23,7 +23,7 @@ type neighborhood struct {
 	// Private
 	normal   *mat64.Vector
 	plane    *plane
-	universe *mat64.Dense
+	universe *PointCloudAnalyzer
 }
 
 // https://www.researchgate.net/publication/293330421_A_fast_and_robust_local_descriptor_for_3D_point_cloud_registration
@@ -42,14 +42,12 @@ type PointCloudAnalyzer struct {
 
 func (a *PointCloudAnalyzer) MakePointCloudAnalyzer(points *mat64.Dense) {
 	a.universe = points
+	a.neighborhoods = make(map[int]neighborhood)
 }
 
 // Calculates and returns the point's LFSH descriptor.
 func (a *PointCloudAnalyzer) Descriptor(col int) LFSHDescriptor {
-	n, ok := a.neighborhoods[col]
-	if !ok {
-		n = getNeighborhood(col, a.universe, searchRadius)
-	}
+	n := a.getNeighborhood(col, searchRadius)
 	return LFSHDescriptor{
 		LocalDepthHistogram:     n.LocalDepthHistogram(),
 		NormalDevianceHistogram: n.NormalDevianceHistogram(),
@@ -98,7 +96,7 @@ const (
 
 	// This value is used to set the size of the neighborhood sphere. In whatever
 	// units the coordinate system is in.
-	searchRadius = 1
+	searchRadius = 0.1
 )
 
 // n = normal
@@ -123,14 +121,24 @@ func magnitudeSquared(v *mat64.Vector) float64 {
 	return sum
 }
 
-func getNeighborhood(col int, points *mat64.Dense, radius float64) neighborhood {
+func (a *PointCloudAnalyzer) getNeighborhood(col int, radius float64) neighborhood {
+	n, ok := a.neighborhoods[col]
+	if !ok {
+		n = a.implGetNeighborhood(col, searchRadius)
+		a.neighborhoods[col] = n
+	}
+	return n
+}
+
+func (a *PointCloudAnalyzer) implGetNeighborhood(col int, radius float64) neighborhood {
+	points := a.universe
 	_, c := points.Dims()
 	point := points.ColView(col)
 	neighborhood := &neighborhood{
 		Dense:    mat64.NewDense(3, 0, nil),
 		Center:   *point,
 		R:        radius,
-		universe: points,
+		universe: a,
 	}
 	diff := mat64.NewVector(3, []float64{0, 0, 0})
 	neighborhoodSet := make(map[int]bool)
@@ -142,6 +150,7 @@ func getNeighborhood(col int, points *mat64.Dense, radius float64) neighborhood 
 			neighborhoodSet[j] = true
 		}
 	}
+	log.Println(len(neighborhoodSet))
 	neighborhood.Dense = neighborhood.Grow(0, len(neighborhoodSet)).(*mat64.Dense)
 	index := 0
 	for k := range neighborhoodSet {
@@ -199,7 +208,7 @@ func (n *neighborhood) NormalDevianceHistogram() map[int]int {
 	_, c := n.Dims()
 	unitNormal := unit(n.Normal())
 	for j := 0; j < c; j++ {
-		otherNeighborhood := getNeighborhood(j, n.universe, n.R)
+		otherNeighborhood := n.universe.getNeighborhood(j, n.R)
 		otherUnitNormal := unit(otherNeighborhood.Normal())
 		deviance := math.Acos(mat64.Dot(&unitNormal, &otherUnitNormal))
 		bucket := int(math.Floor(deviance / ((math.Pi) / numberAngularBuckets)))

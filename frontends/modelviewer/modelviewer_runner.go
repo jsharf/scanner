@@ -3,13 +3,14 @@ package main
 import (
 	"flag"
 	"image/color"
-	"runtime/pprof"
 
 	"log"
 	"os"
 	"time"
 
 	"google.golang.org/grpc"
+	"net/http"
+	_ "net/http/pprof"
 
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/golang/protobuf/proto"
@@ -42,9 +43,9 @@ var (
 	windowWidth  = flag.Int("window_width", 1000, "initial window width")
 	windowHeight = flag.Int("window_height", 1000, "initial window height")
 
-	frameRate  = flag.Duration("framerate", time.Second/60, `Cap on framerate. Provide with units, like "16.66ms"`)
-	baseDir    = flag.String("base_dir", `C:\workspace\Go\src\github.com\omustardo\scanner\frontends\modelviewer`, "All file paths should be specified relative to this root.")
-	cpuprofile = flag.String("cpuprofile", "cpu.prof", "write cpu profile `file`")
+	frameRate = flag.Duration("framerate", time.Second/60, `Cap on framerate. Provide with units, like "16.66ms"`)
+	baseDir   = flag.String("base_dir", `C:\workspace\Go\src\github.com\omustardo\scanner\frontends\modelviewer`, "All file paths should be specified relative to this root.")
+	//cpuprofile = flag.String("cpuprofile", "cpu.prof", "write cpu profile `file`")
 )
 
 func init() {
@@ -54,18 +55,21 @@ func init() {
 }
 
 func main() {
+	go func() {
+		log.Println(http.ListenAndServe("localhost:6060", nil))
+	}()
 	flag.Parse()
 
-	if *cpuprofile != "" {
-		f, err := os.Create(*cpuprofile)
-		if err != nil {
-			log.Fatal("could not create CPU profile: ", err)
-		}
-		if err := pprof.StartCPUProfile(f); err != nil {
-			log.Fatal("could not start CPU profile: ", err)
-		}
-		defer pprof.StopCPUProfile()
-	}
+	//if *cpuprofile != "" {
+	//	f, err := os.Create(*cpuprofile)
+	//	if err != nil {
+	//		log.Fatal("could not create CPU profile: ", err)
+	//	}
+	//	if err := pprof.StartCPUProfile(f); err != nil {
+	//		log.Fatal("could not start CPU profile: ", err)
+	//	}
+	//	defer pprof.StopCPUProfile()
+	//}
 
 	terminate := gome.Initialize("Animation Demo", *windowWidth, *windowHeight, *baseDir)
 	defer terminate()
